@@ -42,12 +42,20 @@ android {
 }
 
 dependencies {
+    val camerax_version = "1.6.0-alpha02"
+    implementation("androidx.camera:camera-camera2:$camerax_version")
+    implementation("androidx.camera:camera-lifecycle:$camerax_version")
+    implementation("androidx.camera:camera-view:$camerax_version")
+
     val lifecycle_version = "2.10.0"
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycle_version")
+
+    val mlkit_version = "18.3.1"
+    implementation("com.google.mlkit:barcode-scanning:$mlkit_version")
 
     val nav_version = "2.9.6"
     implementation("androidx.navigation:navigation-compose:$nav_version")
