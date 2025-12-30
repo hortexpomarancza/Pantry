@@ -6,6 +6,10 @@ import com.example.pantry.data.model.Product
 class ProductRepository(private val productDao: ProductDao) {
     val allProducts = productDao.getAllProducts()
 
+    suspend fun getProductNameByBarcode(barcode: String): String? {
+        return productDao.getProductNameByBarcode(barcode)
+    }
+
     suspend fun insert(product: Product) {
         productDao.insertProduct(product)
     }

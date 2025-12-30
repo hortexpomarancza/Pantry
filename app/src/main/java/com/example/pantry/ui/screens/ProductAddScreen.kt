@@ -1,6 +1,7 @@
 package com.example.pantry.ui.screens
 
 import android.app.DatePickerDialog
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,8 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
@@ -17,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,11 +42,14 @@ import java.util.Locale
 @Composable
 fun ProductAddScreen(
     viewModel: ProductViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToScanner: () -> Unit,
+    scannedBarcode: String? = null
 ) {
     val context = LocalContext.current
 
     var name by rememberSaveable { mutableStateOf("") }
+    var barcode by rememberSaveable { mutableStateOf("") }
     var dateMillis by rememberSaveable {
         mutableStateOf(System.currentTimeMillis() + 1000 * 60 * 60 * 24)
     }
@@ -64,6 +73,23 @@ fun ProductAddScreen(
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
+    LaunchedEffect(scannedBarcode) {
+        if (scannedBarcode != null) barcode = scannedBarcode
+    }
+
+    LaunchedEffect(barcode) {
+        if (barcode.isNotBlank()) {
+            try {
+                val nameByBarcode = viewModel.getProductNameByBarcode(barcode)
+                if (!nameByBarcode.isNullOrBlank()) {
+                    name = nameByBarcode
+                }
+            } catch (e: Exception) {
+                Log.e("ProductAddScreen", "Fetching error", e)
+            }
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -85,6 +111,18 @@ fun ProductAddScreen(
                 label = { Text(text = stringResource(R.string.product_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
+            )
+
+            TextField(
+                value = barcode,
+                onValueChange = { barcode = it },
+                label = { Text(text = stringResource(R.string.barcode)) },
+                modifier = Modifier.fillMaxWidth(),
+                trailingIcon = {
+                    IconButton(onClick = onNavigateToScanner) {
+                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.scan_barcode))
+                    }
+                }
             )
 
             TextField(
@@ -126,7 +164,7 @@ fun ProductAddScreen(
                         viewModel.addProduct(
                             name,
                             dateMillis,
-                            "12345")
+                            barcode)
                         onNavigateBack()
                     }
                 },

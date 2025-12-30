@@ -10,6 +10,10 @@ import kotlinx.coroutines.launch
 class ProductViewModel(private val repository: ProductRepository) : ViewModel() {
     val allProducts: LiveData<List<Product>> = repository.allProducts
 
+    suspend fun getProductNameByBarcode(barcode: String): String? {
+        return repository.getProductNameByBarcode(barcode)
+    }
+
     fun addProduct(name: String, expirationDate: Long, barcode: String?) {
         val newProduct = Product(name = name, expirationDate = expirationDate, barcode = barcode)
 

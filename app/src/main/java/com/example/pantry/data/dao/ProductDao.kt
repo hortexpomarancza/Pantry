@@ -13,6 +13,9 @@ interface ProductDao {
     @Query("SELECT * FROM products ORDER BY expirationDate ASC")
     fun getAllProducts(): LiveData<List<Product>>
 
+    @Query("SELECT name FROM products WHERE barcode = :barcode LIMIT 1")
+    suspend fun getProductNameByBarcode(barcode: String): String?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduct(product: Product)
 
