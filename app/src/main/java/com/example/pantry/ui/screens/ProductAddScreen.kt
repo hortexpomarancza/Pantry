@@ -47,7 +47,7 @@ fun ProductAddScreen(
     onNavigateBack: () -> Unit,
     onNavigateToScanner: () -> Unit,
     scannedBarcode: String? = null,
-    productIdToEdit: Int? = null // <--- NOWY PARAMETR
+    productIdToEdit: Int? = null
 ) {
     val context = LocalContext.current
     val isEditMode = productIdToEdit != null && productIdToEdit != -1
@@ -115,7 +115,7 @@ fun ProductAddScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = if (isEditMode) "Edytuj produkt" else stringResource(R.string.add_product))
+                    Text(text = stringResource(if (isEditMode) R.string.edit_product else R.string.add_product))
                 }
             )
         }
@@ -206,7 +206,7 @@ fun ProductAddScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(text = if (isEditMode) "Zapisz zmiany" else stringResource(R.string.add))
+                    Text(text = stringResource(if (isEditMode) R.string.save_changes else R.string.add))
                 }
             }
         }

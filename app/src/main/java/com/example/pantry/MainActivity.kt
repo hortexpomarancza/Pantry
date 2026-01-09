@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToScanner = { navController.navigate("scanner") },
                         scannedBarcode = scannedBarcode.value,
-                        productIdToEdit = productId // Przekazujemy ID do ekranu
+                        productIdToEdit = productId
                     )
                 }
 
