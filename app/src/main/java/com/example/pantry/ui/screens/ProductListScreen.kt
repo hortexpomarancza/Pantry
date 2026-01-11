@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
@@ -19,10 +19,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -38,7 +38,8 @@ import java.util.Locale
 @Composable
 fun ProductListScreen(
     viewModel: ProductViewModel,
-    onNavigateToAdd: () -> Unit
+    onNavigateToAdd: () -> Unit,
+    onNavigateToEdit: (Product) -> Unit
 ) {
     val products by viewModel.allProducts.observeAsState(initial = emptyList())
 
@@ -55,7 +56,8 @@ fun ProductListScreen(
             items(products) { product ->
                 ProductItem(
                     product = product,
-                    onLongPress = { promptedProduct = product }
+                    onLongPress = { promptedProduct = product },
+                    onClick = { onNavigateToEdit(product) }
                 )
             }
         }
@@ -86,7 +88,8 @@ fun ProductListScreen(
 @Composable
 fun ProductItem(
     product: Product,
-    onLongPress: () -> Unit
+    onLongPress: () -> Unit,
+    onClick: () -> Unit
 ) {
     val hapticFeedback = LocalHapticFeedback.current
 
@@ -99,7 +102,8 @@ fun ProductItem(
                     onLongPress = {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                         onLongPress()
-                    }
+                    },
+                    onTap = { onClick() }
                 )
             }
     ) {

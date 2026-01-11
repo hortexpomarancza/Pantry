@@ -14,11 +14,20 @@ class ProductViewModel(private val repository: ProductRepository) : ViewModel() 
         return repository.getProductNameByBarcode(barcode)
     }
 
+    suspend fun getProductById(id: Int): Product? {
+        return repository.getProductById(id)
+    }
+
     fun addProduct(name: String, expirationDate: Long, barcode: String?) {
         val newProduct = Product(name = name, expirationDate = expirationDate, barcode = barcode)
-
         viewModelScope.launch {
             repository.insert(newProduct)
+        }
+    }
+
+    fun updateProduct(product: Product) {
+        viewModelScope.launch {
+            repository.update(product)
         }
     }
 

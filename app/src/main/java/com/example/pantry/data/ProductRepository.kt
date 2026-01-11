@@ -10,8 +10,16 @@ class ProductRepository(private val productDao: ProductDao) {
         return productDao.getProductNameByBarcode(barcode)
     }
 
+    suspend fun getProductById(id: Int): Product? {
+        return productDao.getProductById(id)
+    }
+
     suspend fun insert(product: Product) {
         productDao.insertProduct(product)
+    }
+
+    suspend fun update(product: Product) {
+        productDao.updateProduct(product)
     }
 
     suspend fun delete(product: Product) {
