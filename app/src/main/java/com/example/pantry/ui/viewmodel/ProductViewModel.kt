@@ -8,6 +8,7 @@ import com.example.pantry.data.model.Product
 import kotlinx.coroutines.launch
 
 class ProductViewModel(private val repository: ProductRepository) : ViewModel() {
+
     val allProducts: LiveData<List<Product>> = repository.allProducts
 
     suspend fun getProductNameByBarcode(barcode: String): String? {
@@ -18,8 +19,14 @@ class ProductViewModel(private val repository: ProductRepository) : ViewModel() 
         return repository.getProductById(id)
     }
 
-    fun addProduct(name: String, expirationDate: Long, barcode: String?) {
-        val newProduct = Product(name = name, expirationDate = expirationDate, barcode = barcode)
+    fun addProduct(name: String, expirationDate: Long, barcode: String?, category: String, count: Int) {
+        val newProduct = Product(
+            name = name,
+            expirationDate = expirationDate,
+            barcode = barcode,
+            category = category,
+            count = count
+        )
         viewModelScope.launch {
             repository.insert(newProduct)
         }
@@ -34,6 +41,13 @@ class ProductViewModel(private val repository: ProductRepository) : ViewModel() 
     fun deleteProduct(product: Product) {
         viewModelScope.launch {
             repository.delete(product)
+        }
+    }
+
+    // NOWE: Usuwa produkty, żeby kategoria zniknęła z listy "displayCategories"
+    fun deleteProductsByCategory(category: String) {
+        viewModelScope.launch {
+            repository.deleteProductsByCategory(category)
         }
     }
 }

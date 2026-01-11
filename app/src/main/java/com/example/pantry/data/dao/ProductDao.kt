@@ -6,7 +6,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update // <--- Ważne: import
+import androidx.room.Update
 import com.example.pantry.data.model.Product
 
 @Dao
@@ -28,4 +28,8 @@ interface ProductDao {
 
     @Delete
     suspend fun deleteProduct(product: Product)
+
+    // NOWE: Usuwanie wszystkich produktów z danej kategorii
+    @Query("DELETE FROM products WHERE category = :category")
+    suspend fun deleteProductsByCategory(category: String)
 }

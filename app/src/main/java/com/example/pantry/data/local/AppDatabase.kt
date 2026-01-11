@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.example.pantry.data.dao.ProductDao
 import com.example.pantry.data.model.Product
 
-@Database(entities = [Product::class], version = 1, exportSchema = false)
+@Database(entities = [Product::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao
 
@@ -21,7 +21,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "larder_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration() // Opcjonalnie: czyści bazę przy zmianie wersji
+                    .build()
                 INSTANCE = instance
                 instance
             }

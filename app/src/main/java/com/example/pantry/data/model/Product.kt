@@ -4,10 +4,11 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "products")
-class Product (
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+data class Product(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
-    val barcode: String?,
-    val expirationDate: Long
+    val expirationDate: Long,
+    val barcode: String? = null,
+    val category: String,
+    val count: Int = 1 // <--- DODAJ TO POLE (domyślnie 1)
 )
