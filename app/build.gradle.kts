@@ -45,7 +45,7 @@ dependencies {
     val barcode_version = "17.3.0"
     implementation("com.google.mlkit:barcode-scanning:$barcode_version")
     implementation("androidx.compose.material:material-icons-extended:1.5.4") // lub nowsza wersja
-
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.compose.material:material-icons-extended:1.6.0") // Lub nowsza wersja, pasująca do Twojego Compose
     val camerax_version = "1.6.0-alpha02"
     implementation("androidx.camera:camera-camera2:$camerax_version")

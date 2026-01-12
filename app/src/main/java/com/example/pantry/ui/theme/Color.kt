@@ -2,35 +2,49 @@ package com.example.pantry.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// --- GŁÓWNY KOLOR APLIKACJI (Brązowy pasek jak na zdjęciu) ---
-val AppTopBarBrown = Color(0xFF795548)
+// --- GŁÓWNY KOLOR APLIKACJI ---
+// Ciemniejszy, głęboki brąz (Espresso / Dark Chocolate)
+val AppTopBarBrown = Color(0xFF3E2723)
 
-// --- KOLORY KAFELKÓW (Zgodne ze zdjęciem "Twoja Spiżarnia") ---
-val TileColorMeat = Color(0xFFE57373)    // Mięso (Czerwony/Różowy)
-val TileColorVeg = Color(0xFFC8E6C9)     // Warzywa (Zielony)
-val TileColorDairy = Color(0xFFFFE0B2)   // Nabiał (Żółto-pomarańczowy)
-val TileColorFrozen = Color(0xFFBBDEFB)  // Mrożonki (Niebieski)
-val TileColorBread = Color(0xFFD7CCC8)   // Pieczywo (Beżowo-brązowy)
-val TileColorDrinks = Color(0xFFB2DFDB)  // Napoje (Morski/Teal)
-val TileColorOther = Color(0xFFE1BEE7)   // Inne (Fioletowy)
-val TileColorAdd = Color(0xFFE6E6FA)     // Dodaj (Jasny fiolet)
+// --- ŻYWE KOLORY KAFELKÓW ---
+val VividRed = Color(0xFFD32F2F)
+val VividGreen = Color(0xFF388E3C)
+val VividOrange = Color(0xFFF57C00)
+val VividBlue = Color(0xFF1976D2)
+val VividPurple = Color(0xFF7B1FA2)
+val VividTeal = Color(0xFF00796B)
+val VividPink = Color(0xFFC2185B)
+val VividYellow = Color(0xFFFBC02D)
+val VividCyan = Color(0xFF0097A7)
+val VividBrown = Color(0xFF3E2723)
+val VividGrey = Color(0xFF616161)
+val VividIndigo = Color(0xFF303F9F)
 
 // --- Paleta do wyboru (dla nowych kategorii) ---
 val CategoryPalette = listOf(
-    TileColorVeg, TileColorDairy, TileColorMeat, TileColorFrozen,
-    TileColorBread, TileColorDrinks, TileColorOther,
-    Color(0xFFFFF9C4), Color(0xFFF8BBD0), Color(0xFFF0F4C3)
+    VividGreen,     // Warzywa
+    VividOrange,    // Nabiał
+    VividRed,       // Mięso
+    VividBlue,      // Mrożonki
+    Color(0xFF8D6E63), // Pieczywo (Jasny brąz)
+    VividBrown,     // <--- DODANE: Twój nowy ciemny brąz
+    VividTeal,      // Napoje
+    VividPurple,    // Inne
+    VividPink,      // Słodycze/Inne
+    VividYellow,    // Owoce
+    VividIndigo,    // Chemia
+    VividCyan,      // Ryby
+    VividGrey       // Inne
 )
 
-// --- Kolory systemowe / Stanów ---
-val GreenPrimary = Color(0xFF4CAF50)
-val GreenSecondary = Color(0xFF81C784)
-val GreenTertiary = Color(0xFFC8E6C9)
-
+// Kolory systemowe (dostosowane do trybu ciemnego)
+val GreenPrimary = Color(0xFF2E7D32)
+val GreenSecondary = Color(0xFF4CAF50)
 val WhiteSurface = Color(0xFFFFFFFF)
+val DarkSurface = Color(0xFF1E1E1E)
+
 val LightBackground = Color(0xFFF5F5F5)
 
-val StatusFresh = Color(0xFF4CAF50)
-val StatusWarning = Color(0xFFFF9800)
-val StatusExpired = Color(0xFFF44336)
-val StatusText = Color(0xFF757575)
+val StatusFresh = Color(0xFF388E3C)
+val StatusWarning = Color(0xFFFFA000)
+val StatusExpired = Color(0xFFD32F2F)

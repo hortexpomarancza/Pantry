@@ -8,11 +8,17 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.pantry.data.model.Product
+import com.example.pantry.data.model.Space
 
 @Dao
 interface ProductDao {
-    @Query("SELECT * FROM products ORDER BY expirationDate ASC")
-    fun getAllProducts(): LiveData<List<Product>>
+    // --- PRODUKTY ---
+    @Query("SELECT * FROM products WHERE storageLocation = :location ORDER BY expirationDate ASC")
+    fun getProductsByLocation(location: String): LiveData<List<Product>>
+
+    // NOWE: Metoda dla Workera powiadomień (pobiera wszystko synchronicznie)
+    @Query("SELECT * FROM products")
+    suspend fun getAllProductsSync(): List<Product>
 
     @Query("SELECT * FROM products WHERE id = :id LIMIT 1")
     suspend fun getProductById(id: Int): Product?
@@ -29,7 +35,25 @@ interface ProductDao {
     @Delete
     suspend fun deleteProduct(product: Product)
 
-    // NOWE: Usuwanie wszystkich produktów z danej kategorii
-    @Query("DELETE FROM products WHERE category = :category")
-    suspend fun deleteProductsByCategory(category: String)
+    @Query("DELETE FROM products WHERE category = :category AND storageLocation = :location")
+    suspend fun deleteProductsByCategoryAndLocation(category: String, location: String)
+
+    @Query("DELETE FROM products WHERE storageLocation = :location")
+    suspend fun deleteProductsByLocation(location: String)
+
+    // --- PRZESTRZENIE ---
+    @Query("SELECT * FROM spaces")
+    fun getAllSpaces(): LiveData<List<Space>>
+
+    @Query("SELECT COUNT(*) FROM spaces")
+    suspend fun getSpacesCount(): Int
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSpace(space: Space)
+
+    @Delete
+    suspend fun deleteSpace(space: Space)
+
+    @Query("UPDATE spaces SET color = :color WHERE name = :name")
+    suspend fun updateSpaceColor(name: String, color: Int)
 }

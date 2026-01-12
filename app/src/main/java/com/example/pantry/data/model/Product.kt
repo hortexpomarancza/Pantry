@@ -1,5 +1,7 @@
 package com.example.pantry.data.model
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -10,5 +12,12 @@ data class Product(
     val expirationDate: Long,
     val barcode: String? = null,
     val category: String,
-    val count: Int = 1 // <--- DODAJ TO POLE (domyślnie 1)
+    val count: Int = 1,
+    val storageLocation: String = "Twoja Spiżarnia"
+)
+
+@Entity(tableName = "spaces")
+data class Space(
+    @PrimaryKey val name: String,
+    val color: Int // Przechowujemy kolor jako Int (ARGB)
 )

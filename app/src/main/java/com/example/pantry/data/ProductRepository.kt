@@ -1,10 +1,17 @@
 package com.example.pantry.data
 
+import androidx.lifecycle.LiveData
 import com.example.pantry.data.dao.ProductDao
 import com.example.pantry.data.model.Product
+import com.example.pantry.data.model.Space
 
 class ProductRepository(private val productDao: ProductDao) {
-    val allProducts = productDao.getAllProducts()
+
+    val allSpaces: LiveData<List<Space>> = productDao.getAllSpaces()
+
+    fun getProductsByLocation(location: String): LiveData<List<Product>> {
+        return productDao.getProductsByLocation(location)
+    }
 
     suspend fun getProductNameByBarcode(barcode: String): String? {
         return productDao.getProductNameByBarcode(barcode)
@@ -26,8 +33,22 @@ class ProductRepository(private val productDao: ProductDao) {
         productDao.deleteProduct(product)
     }
 
+    suspend fun deleteProductsByCategoryAndLocation(category: String, location: String) {
+        productDao.deleteProductsByCategoryAndLocation(category, location)
+    }
+
+    // --- PRZESTRZENIE ---
+    suspend fun insertSpace(name: String, color: Int) {
+        productDao.insertSpace(Space(name, color))
+    }
+
+    suspend fun deleteSpace(space: Space) {
+        productDao.deleteProductsByLocation(space.name)
+        productDao.deleteSpace(space)
+    }
+
     // NOWE
-    suspend fun deleteProductsByCategory(category: String) {
-        productDao.deleteProductsByCategory(category)
+    suspend fun updateSpaceColor(name: String, color: Int) {
+        productDao.updateSpaceColor(name, color)
     }
 }
