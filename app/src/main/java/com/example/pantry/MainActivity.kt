@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState // WAŻNY IMPORT!
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,7 +51,7 @@ class MainActivity : ComponentActivity() {
         val database = AppDatabase.getDatabase(this)
         val repository = ProductRepository(database.productDao())
 
-        // ZMIANA: Przekazujemy 'application' do fabryki
+        // Fabryka teraz przyjmuje application (poprawka z poprzednich kroków)
         val viewModelFactory = ProductViewModelFactory(application, repository)
         val productViewModel = ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
 
@@ -112,7 +113,11 @@ class MainActivity : ComponentActivity() {
                             val spaceColor = backStackEntry.arguments?.getInt("color")
                             val savedState = navController.previousBackStackEntry?.savedStateHandle
                             val categoriesList = savedState?.get<List<String>>("categories") ?: listOf("Inne")
-                            val scannedBarcode = backStackEntry.savedStateHandle.get<String>("scanned_barcode")
+
+                            // NAPRAWA: Używamy getLiveData(...).observeAsState(), żeby widzieć zmiany ze skanera
+                            val scannedBarcode by backStackEntry.savedStateHandle
+                                .getLiveData<String>("scanned_barcode")
+                                .observeAsState()
 
                             ProductAddScreen(
                                 viewModel = productViewModel,
@@ -135,8 +140,12 @@ class MainActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val productId = backStackEntry.arguments?.getInt("productId")
                             val spaceColor = backStackEntry.arguments?.getInt("color")
-                            val categoriesList = listOf("Warzywa i Owoce", "Nabiał", "Mięso", "Pieczywo", "Napoje", "Mrożonki", "Inne")
-                            val scannedBarcode = backStackEntry.savedStateHandle.get<String>("scanned_barcode")
+                            val categoriesList = listOf("Warzywa i Owoce", "Nabiał", "Mięso", "Pieczywo", "Napoje", "Mrożonki", "Inne") // Domyślna lista
+
+                            // NAPRAWA: Tutaj też nasłuchujemy zmian ze skanera
+                            val scannedBarcode by backStackEntry.savedStateHandle
+                                .getLiveData<String>("scanned_barcode")
+                                .observeAsState()
 
                             ProductAddScreen(
                                 viewModel = productViewModel,
@@ -153,6 +162,7 @@ class MainActivity : ComponentActivity() {
                         composable("scanner") {
                             ScannerScreen(
                                 onBarcodeScanned = { code ->
+                                    // Zapisujemy wynik do poprzdniego ekranu (Add lub Edit)
                                     navController.previousBackStackEntry?.savedStateHandle?.set("scanned_barcode", code)
                                     navController.popBackStack()
                                 },
@@ -180,10 +190,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun scheduleExpirationCheck() {
-        // --- TESTOWANIE: Uruchom sprawdzenie NATYCHMIAST po włączeniu aplikacji ---
         val oneTimeRequest = androidx.work.OneTimeWorkRequest.Builder(com.example.pantry.worker.ExpirationNotificationWorker::class.java).build()
         WorkManager.getInstance(this).enqueue(oneTimeRequest)
-        // --------------------------------------------------------------------------
 
         val expirationCheckRequest = PeriodicWorkRequestBuilder<com.example.pantry.worker.ExpirationNotificationWorker>(
             24, TimeUnit.HOURS

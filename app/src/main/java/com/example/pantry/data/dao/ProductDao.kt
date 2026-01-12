@@ -13,10 +13,10 @@ import com.example.pantry.data.model.Space
 @Dao
 interface ProductDao {
     // --- PRODUKTY ---
-    @Query("SELECT * FROM products WHERE storageLocation = :location ORDER BY expirationDate ASC")
+    // ZMIANA: Sortowanie - najpierw te co mają datę, na końcu te bez daty (NULL)
+    @Query("SELECT * FROM products WHERE storageLocation = :location ORDER BY CASE WHEN expirationDate IS NULL THEN 1 ELSE 0 END, expirationDate ASC")
     fun getProductsByLocation(location: String): LiveData<List<Product>>
 
-    // NOWE: Metoda dla Workera powiadomień (pobiera wszystko synchronicznie)
     @Query("SELECT * FROM products")
     suspend fun getAllProductsSync(): List<Product>
 

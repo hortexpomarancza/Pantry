@@ -13,7 +13,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@Database(entities = [Product::class, Space::class], version = 5, exportSchema = false)
+// ZMIANA: Wersja 6
+@Database(entities = [Product::class, Space::class], version = 6, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao
 
@@ -34,12 +35,10 @@ abstract class AppDatabase : RoomDatabase() {
                             INSTANCE?.let { database ->
                                 CoroutineScope(Dispatchers.IO).launch {
                                     val dao = database.productDao()
-                                    // TYLKO JEDNA PRZESTRZEŃ NA START
                                     dao.insertSpace(Space("Twoja Spiżarnia", AndroidColor.parseColor("#5D4037")))
                                 }
                             }
                         }
-                        // Zabezpieczenie: jeśli baza jest pusta po migracji, dodaj spiżarnię
                         override fun onOpen(db: SupportSQLiteDatabase) {
                             super.onOpen(db)
                             INSTANCE?.let { database ->

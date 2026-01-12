@@ -3,8 +3,7 @@ package com.example.pantry.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // --- GŁÓWNY KOLOR APLIKACJI ---
-// Ciemniejszy, głęboki brąz (Espresso / Dark Chocolate)
-val AppTopBarBrown = Color(0xFF3E2723)
+val AppTopBarBrown = Color(0xFF5D4037) // Ciemniejszy, bardziej elegancki brąz
 
 // --- ŻYWE KOLORY KAFELKÓW ---
 val VividRed = Color(0xFFD32F2F)
@@ -16,9 +15,11 @@ val VividTeal = Color(0xFF00796B)
 val VividPink = Color(0xFFC2185B)
 val VividYellow = Color(0xFFFBC02D)
 val VividCyan = Color(0xFF0097A7)
-val VividBrown = Color(0xFF3E2723)
+val VividBrown = Color(0xFF5D4037)
 val VividGrey = Color(0xFF616161)
 val VividIndigo = Color(0xFF303F9F)
+// NOWY KOLOR OD CIEBIE
+val VividBronze = Color(0xFFCD853F)
 
 // --- Paleta do wyboru (dla nowych kategorii) ---
 val CategoryPalette = listOf(
@@ -26,15 +27,16 @@ val CategoryPalette = listOf(
     VividOrange,    // Nabiał
     VividRed,       // Mięso
     VividBlue,      // Mrożonki
-    Color(0xFF8D6E63), // Pieczywo (Jasny brąz)
-    VividBrown,     // <--- DODANE: Twój nowy ciemny brąz
+    Color(0xFF8D6E63), // Pieczywo (Brązowy jasny)
     VividTeal,      // Napoje
     VividPurple,    // Inne
     VividPink,      // Słodycze/Inne
     VividYellow,    // Owoce
     VividIndigo,    // Chemia
     VividCyan,      // Ryby
-    VividGrey       // Inne
+    VividGrey,      // Inne
+    VividBrown,     // Ciemny brąz (Spiżarnia)
+    VividBronze     // <--- DODANY NOWY KOLOR
 )
 
 // Kolory systemowe (dostosowane do trybu ciemnego)

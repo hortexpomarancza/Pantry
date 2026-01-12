@@ -3,6 +3,8 @@ package com.example.pantry.ui.screens
 import android.app.DatePickerDialog
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
+// DODANY IMPORT:
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,7 +28,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pantry.data.model.Product
-import com.example.pantry.ui.theme.*
 import com.example.pantry.ui.viewmodel.ProductViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -49,13 +50,10 @@ fun ProductAddScreen(
     var selectedCategory by rememberSaveable { mutableStateOf(initialCategory ?: availableCategories.firstOrNull() ?: "Inne") }
     var hasUserSelectedCategory by remember { mutableStateOf(initialCategory != null) }
 
-    // --- POPRAWKA: Pobieramy kolory z ViewModelu (tam są też Twoje własne) ---
     val categoryColors = viewModel.categoryColors
     val targetCategoryColor = categoryColors[selectedCategory]?.let { Color(it) }
-
     val fallbackSpaceColor = if (spaceColor != null && spaceColor != 0) Color(spaceColor) else MaterialTheme.colorScheme.primary
 
-    // Logika wyboru głównego koloru ekranu
     val mainColor = if (!hasUserSelectedCategory && !isEditMode) {
         fallbackSpaceColor
     } else {
@@ -80,6 +78,9 @@ fun ProductAddScreen(
     var name by rememberSaveable { mutableStateOf("") }
     var barcode by rememberSaveable { mutableStateOf("") }
     var count by rememberSaveable { mutableStateOf(1) }
+
+    // Stan czy produkt ma datę ważności
+    var hasExpiration by rememberSaveable { mutableStateOf(true) }
     var dateMillis by rememberSaveable { mutableStateOf(System.currentTimeMillis() + 1000 * 60 * 60 * 24) }
     var originalLocation by remember { mutableStateOf("Twoja Spiżarnia") }
 
@@ -103,10 +104,17 @@ fun ProductAddScreen(
             product?.let {
                 name = it.name
                 barcode = it.barcode ?: ""
-                dateMillis = it.expirationDate
                 selectedCategory = it.category
                 count = it.count
                 originalLocation = it.storageLocation
+
+                // Wczytanie daty
+                if (it.expirationDate != null) {
+                    hasExpiration = true
+                    dateMillis = it.expirationDate
+                } else {
+                    hasExpiration = false
+                }
             }
             isLoading = false
         }
@@ -202,13 +210,9 @@ fun ProductAddScreen(
                         Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             availableCategories.forEach { category ->
                                 val isSelected = category == selectedCategory
-
                                 FilterChip(
                                     selected = isSelected,
-                                    onClick = {
-                                        selectedCategory = category
-                                        hasUserSelectedCategory = true
-                                    },
+                                    onClick = { selectedCategory = category; hasUserSelectedCategory = true },
                                     label = { Text(category) },
                                     leadingIcon = if (isSelected) { { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) } } else null,
                                     colors = FilterChipDefaults.filterChipColors(
@@ -252,21 +256,44 @@ fun ProductAddScreen(
                     }
                 }
 
-                // Data
-                val dateLabel = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(dateMillis))
-                OutlinedCard(
-                    onClick = { datePickerDialog.show() },
-                    modifier = Modifier.fillMaxWidth(),
+                // Sekcja Daty z przełącznikiem
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, mainColor),
-                    colors = CardDefaults.outlinedCardColors(containerColor = Color.White.copy(alpha = 0.5f))
+                    border = BorderStroke(1.dp, mainColor)
                 ) {
-                    Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column {
-                            Text("Data ważności", style = MaterialTheme.typography.labelMedium, color = mainColor)
-                            Text(dateLabel, style = MaterialTheme.typography.bodyLarge, color = Color.Black)
+                    Column(Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Posiada termin ważności?", style = MaterialTheme.typography.titleSmall, color = Color.Black)
+                            Switch(
+                                checked = hasExpiration,
+                                onCheckedChange = { hasExpiration = it },
+                                colors = SwitchDefaults.colors(checkedThumbColor = mainColor, checkedTrackColor = mainColor.copy(alpha = 0.3f))
+                            )
                         }
-                        Icon(Icons.Default.CalendarToday, null, tint = mainColor)
+
+                        if (hasExpiration) {
+                            Divider(modifier = Modifier.padding(vertical = 12.dp), color = mainColor.copy(alpha = 0.3f))
+
+                            val dateLabel = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(dateMillis))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable { datePickerDialog.show() },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text("Data ważności", style = MaterialTheme.typography.labelMedium, color = mainColor)
+                                    Text(dateLabel, style = MaterialTheme.typography.bodyLarge, color = Color.Black)
+                                }
+                                Icon(Icons.Default.CalendarToday, null, tint = mainColor)
+                            }
+                        } else {
+                            Text("Produkt bezterminowy", style = MaterialTheme.typography.bodyMedium, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                        }
                     }
                 }
 
@@ -277,10 +304,13 @@ fun ProductAddScreen(
                         if (name.isBlank()) {
                             showErrorBlankName = true
                         } else {
+                            // Zapisujemy null jeśli hasExpiration == false
+                            val finalDate = if (hasExpiration) dateMillis else null
+
                             if (isEditMode) {
-                                viewModel.updateProduct(Product(id = productIdToEdit!!, name = name, expirationDate = dateMillis, barcode = barcode.ifBlank { null }, category = selectedCategory, count = count, storageLocation = originalLocation))
+                                viewModel.updateProduct(Product(id = productIdToEdit!!, name = name, expirationDate = finalDate, barcode = barcode.ifBlank { null }, category = selectedCategory, count = count, storageLocation = originalLocation))
                             } else {
-                                viewModel.addProduct(name = name, expirationDate = dateMillis, barcode = barcode.ifBlank { null }, category = selectedCategory, count = count)
+                                viewModel.addProduct(name = name, expirationDate = finalDate, barcode = barcode.ifBlank { null }, category = selectedCategory, count = count)
                             }
                             onNavigateBack()
                         }

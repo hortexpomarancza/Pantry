@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.pantry.data.model.Product
 import com.example.pantry.ui.theme.*
 import com.example.pantry.ui.viewmodel.ProductViewModel
@@ -60,7 +61,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
-import androidx.compose.ui.graphics.graphicsLayer
+import kotlin.math.roundToInt
 
 val DEFAULT_START_CATEGORIES = listOf(
     "Warzywa i Owoce", "Nabiał", "Mięso", "Pieczywo",
@@ -88,13 +89,10 @@ fun ProductListScreen(
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var isCategoryListView by remember { mutableStateOf(false) }
 
-    // Dane z ViewModelu
     val currentCategories = viewModel.categories
     val categoryColorsMap = viewModel.categoryColors
     val customIconsMap = viewModel.customIcons
 
-    // --- Stan Pagera (Swipe) ---
-    // 0 = Kategorie, 1 = Terminy
     val pagerState = rememberPagerState(pageCount = { 2 })
 
     var showAddCategoryDialog by remember { mutableStateOf(false) }
@@ -106,7 +104,6 @@ fun ProductListScreen(
         return categoryColorsMap[catName]?.let { Color(it) } ?: Color.Gray
     }
 
-    // Kolor belki: jeśli jesteśmy w kategorii, to jej kolor, jeśli nie - główny brąz
     val targetTopBarColor = if (selectedCategory != null) getCategoryColor(selectedCategory!!) else mainAppColor
     val animatedTopBarColor by animateColorAsState(targetValue = targetTopBarColor, animationSpec = tween(500), label = "TopBarColorAnimation")
 
@@ -119,7 +116,6 @@ fun ProductListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // Zmieniamy tytuł w zależności od zakładki
                     val titleText = when {
                         selectedCategory != null -> selectedCategory!!
                         pagerState.currentPage == 0 -> "Twoja Spiżarnia"
@@ -135,7 +131,6 @@ fun ProductListScreen(
                     }
                 },
                 actions = {
-                    // Akcje tylko dla widoku kategorii (strona 0)
                     if (pagerState.currentPage == 0) {
                         if (selectedCategory == null) {
                             IconButton(onClick = { isCategoryListView = !isCategoryListView }) { Icon(imageVector = if (isCategoryListView) Icons.Default.GridView else Icons.Default.ViewList, contentDescription = "Widok", tint = Color.White) }
@@ -148,7 +143,6 @@ fun ProductListScreen(
             )
         },
         floatingActionButton = {
-            // FAB tylko na ekranie kategorii lub wewnątrz kategorii
             if (pagerState.currentPage == 0) {
                 FloatingActionButton(
                     onClick = {
@@ -165,8 +159,6 @@ fun ProductListScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
 
-            // --- PASKI ZAKŁADEK (TABS) ---
-            // Wyświetlamy tylko, gdy nie jesteśmy głęboko w kategorii
             if (selectedCategory == null) {
                 TabRow(
                     selectedTabIndex = pagerState.currentPage,
@@ -194,14 +186,12 @@ fun ProductListScreen(
                 }
             }
 
-            // --- ZAWARTOŚĆ PRZESUWANA (SWIPE) ---
             HorizontalPager(
                 state = pagerState,
-                userScrollEnabled = selectedCategory == null, // Blokujemy swipe jak jesteśmy wewnątrz kategorii
+                userScrollEnabled = selectedCategory == null,
                 modifier = Modifier.weight(1f)
             ) { page ->
                 if (page == 0) {
-                    // --- STRONA 1: WIDOK KATEGORII (STARY) ---
                     Crossfade(targetState = selectedCategory, label = "ViewTransition") { category ->
                         if (category == null) {
                             val onReorderCategories: (Int, Int) -> Unit = { from, to -> viewModel.moveCategory(from, to) }
@@ -229,7 +219,6 @@ fun ProductListScreen(
                                 )
                             }
                         } else {
-                            // Widok produktów w konkretnej kategorii
                             val filteredProducts = products.filter { it.category == category }
                             val bgColor = getCategoryColor(category).copy(alpha = 0.2f).compositeOver(Color.White)
 
@@ -253,9 +242,10 @@ fun ProductListScreen(
                         }
                     }
                 } else {
-                    // --- STRONA 2: NOWY WIDOK CHRONOLOGICZNY ---
+                    val timelineProducts = products.filter { it.expirationDate != null }
+
                     ExpirationTimelineView(
-                        products = products,
+                        products = timelineProducts,
                         getCategoryColor = { getCategoryColor(it) },
                         onProductClick = { product ->
                             if (product.count > 1) viewModel.updateProduct(product.copy(count = product.count - 1))
@@ -270,10 +260,15 @@ fun ProductListScreen(
             }
         }
 
-        // --- DIALOGI (tylko dla widoku kategorii) ---
         if (pagerState.currentPage == 0) {
             if (showAddCategoryDialog) {
-                AdvancedAddCategoryDialog(onDismiss = { showAddCategoryDialog = false }, onConfirm = { name, color, icon -> if (name.isNotBlank()) viewModel.addSessionCategory(name, color.toArgb(), icon); showAddCategoryDialog = false })
+                AdvancedAddCategoryDialog(
+                    onDismiss = { showAddCategoryDialog = false },
+                    onConfirm = { name, color, icon ->
+                        if (name.isNotBlank()) viewModel.addSessionCategory(name, color.toArgb(), icon)
+                        showAddCategoryDialog = false
+                    }
+                )
             }
             if (showCategoryOptionsDialog && selectedCategory != null) {
                 CategoryOptionsDialog(categoryName = selectedCategory!!, onDismiss = { showCategoryOptionsDialog = false }, onDelete = { val cat = selectedCategory!!; if (products.any { it.category == cat }) { showCategoryOptionsDialog = false; showDeleteWithProductsDialog = cat } else { viewModel.removeSessionCategory(cat); selectedCategory = null; showCategoryOptionsDialog = false } }, onChangeColor = { showCategoryOptionsDialog = false; categoryToEditColor = selectedCategory })
@@ -288,7 +283,6 @@ fun ProductListScreen(
     }
 }
 
-// --- NOWY KOMPONENT: Widok chronologiczny ---
 @Composable
 fun ExpirationTimelineView(
     products: List<Product>,
@@ -296,7 +290,6 @@ fun ExpirationTimelineView(
     onProductClick: (Product) -> Unit,
     onProductLongClick: (Product) -> Unit
 ) {
-    // Sortujemy produkty od najstarszych (przeterminowanych) do najnowszych
     val sortedProducts = remember(products) {
         products.sortedBy { it.expirationDate }
     }
@@ -306,7 +299,7 @@ fun ExpirationTimelineView(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Default.DateRange, null, tint = Color.Gray, modifier = Modifier.size(64.dp))
                 Spacer(Modifier.height(16.dp))
-                Text("Brak produktów w spiżarni", color = Color.Gray)
+                Text("Brak produktów z terminem ważności", color = Color.Gray)
             }
         }
     } else {
@@ -323,7 +316,6 @@ fun ExpirationTimelineView(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
-
             items(sortedProducts, key = { it.id }) { product ->
                 ProductRowWithCategoryTag(
                     product = product,
@@ -332,13 +324,11 @@ fun ExpirationTimelineView(
                     onLongClick = { onProductLongClick(product) }
                 )
             }
-
-            item { Spacer(Modifier.height(80.dp)) } // Padding na dole
+            item { Spacer(Modifier.height(80.dp)) }
         }
     }
 }
 
-// Nowy wiersz produktu zawierający "Tag" kategorii
 @Composable
 fun ProductRowWithCategoryTag(
     product: Product,
@@ -347,18 +337,21 @@ fun ProductRowWithCategoryTag(
     onLongClick: () -> Unit
 ) {
     val daysRemaining = calculateDaysRemaining(product.expirationDate)
+
     val statusColor = when {
+        daysRemaining == null -> Color.Gray
         daysRemaining < 0 -> StatusExpired
         daysRemaining < 2 -> StatusWarning
         else -> StatusFresh
     }
 
     val statusText = when {
+        daysRemaining == null -> "Bezterminowo"
         daysRemaining < 0 -> "Po terminie!"
         daysRemaining == 0L -> "Dzisiaj"
         daysRemaining == 1L -> "Jutro"
         daysRemaining <= 7 -> "$daysRemaining dni"
-        else -> SimpleDateFormat("dd.MM", Locale.getDefault()).format(Date(product.expirationDate))
+        else -> SimpleDateFormat("dd.MM", Locale.getDefault()).format(Date(product.expirationDate!!))
     }
 
     Card(
@@ -377,10 +370,9 @@ fun ProductRowWithCategoryTag(
         Row(
             modifier = Modifier
                 .padding(12.dp)
-                .height(IntrinsicSize.Min), // Dopasowanie wysokości do zawartości
+                .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Pasek statusu (lewy bok)
             Box(
                 modifier = Modifier
                     .width(4.dp)
@@ -400,8 +392,6 @@ fun ProductRowWithCategoryTag(
                         color = Color.Black
                     )
                     Spacer(Modifier.width(8.dp))
-
-                    // --- TAG KATEGORII ---
                     Surface(
                         color = categoryColor,
                         shape = RoundedCornerShape(4.dp),
@@ -421,20 +411,18 @@ fun ProductRowWithCategoryTag(
 
                 Spacer(Modifier.height(4.dp))
 
-                // Data ważności
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.Timer, null, Modifier.size(14.dp), tint = Color.Gray)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = statusText,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (daysRemaining <= 3) statusColor else Color.Gray,
-                        fontWeight = if (daysRemaining <= 3) FontWeight.Bold else FontWeight.Normal
+                        color = if (daysRemaining != null && daysRemaining <= 3) statusColor else Color.Gray,
+                        fontWeight = if (daysRemaining != null && daysRemaining <= 3) FontWeight.Bold else FontWeight.Normal
                     )
                 }
             }
 
-            // Licznik
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(8.dp)
@@ -451,8 +439,7 @@ fun ProductRowWithCategoryTag(
     }
 }
 
-
-// --- RESZTA FUNKCJI (Draggable Grid/List, itp.) - Bez większych zmian, tylko dopasowane importy ---
+// --- FUNKCJE POMOCNICZE (Draggable Grid/List) ---
 
 @Composable
 fun DraggableCategoryGrid(
@@ -512,11 +499,9 @@ fun DraggableCategoryGrid(
             val shadowElevation = if (isDragging) 12.dp else 2.dp
             val translationX = if (isDragging) draggingItemOffset.x else 0f
             val translationY = if (isDragging) draggingItemOffset.y else 0f
-
             val count = products.count { it.category == category }
             val tileColor = categoryColors[category]?.let { Color(it) } ?: Color.White
             val icon = customIcons[category] ?: getThematicIcon(category)
-
             Box(
                 modifier = Modifier
                     .zIndex(zIndex)
@@ -582,11 +567,9 @@ fun DraggableCategoryList(
             val zIndex = if (isDragging) 10f else 0f
             val shadowElevation = if (isDragging) 8.dp else 0.dp
             val translationY = if (isDragging) draggingItemOffset else 0f
-
             val count = products.count { it.category == category }
             val tileColor = categoryColors[category]?.let { Color(it) } ?: Color.White
             val icon = customIcons[category] ?: getThematicIcon(category)
-
             Box(
                 modifier = Modifier
                     .zIndex(zIndex)
@@ -601,9 +584,6 @@ fun DraggableCategoryList(
         }
     }
 }
-
-
-// --- FUNKCJE POMOCNICZE ---
 
 @Composable
 fun CategoryTile(name: String, count: Int, color: Color, icon: ImageVector, onClick: () -> Unit) {
@@ -640,15 +620,15 @@ fun ProductListView(products: List<Product>, onProductClick: (Product) -> Unit, 
 @Composable
 fun ProductRowItem(product: Product, onClick: () -> Unit, onLongClick: () -> Unit) {
     val daysRemaining = calculateDaysRemaining(product.expirationDate)
-    val statusColor = when { daysRemaining < 0 -> StatusExpired; daysRemaining < 2 -> StatusWarning; else -> StatusFresh }
-    val statusText = when { daysRemaining < 0 -> "Po terminie!"; daysRemaining == 0L -> "Dzisiaj"; daysRemaining == 1L -> "Jutro"; daysRemaining <= 7 -> "$daysRemaining dni"; else -> SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(product.expirationDate)) }
+    val statusColor = when { daysRemaining == null -> Color.Gray; daysRemaining < 0 -> StatusExpired; daysRemaining < 2 -> StatusWarning; else -> StatusFresh }
+    val statusText = when { daysRemaining == null -> "Bezterminowo"; daysRemaining < 0 -> "Po terminie!"; daysRemaining == 0L -> "Dzisiaj"; daysRemaining == 1L -> "Jutro"; daysRemaining <= 7 -> "$daysRemaining dni"; else -> SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(product.expirationDate!!)) }
 
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).pointerInput(product) { detectTapGestures(onLongPress = { onLongClick() }, onTap = { onClick() }) }, elevation = CardDefaults.cardElevation(2.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.width(6.dp).height(40.dp).clip(RoundedCornerShape(4.dp)).background(statusColor)); Spacer(modifier = Modifier.width(14.dp));
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Color.Black);
-                Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Timer, null, Modifier.size(14.dp), tint = Color.Gray); Spacer(modifier = Modifier.width(4.dp)); Text(text = statusText, style = MaterialTheme.typography.bodySmall, color = if (daysRemaining <= 3) statusColor else Color.Gray, fontWeight = if (daysRemaining <= 3) FontWeight.Bold else FontWeight.Normal) }
+                Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Timer, null, Modifier.size(14.dp), tint = Color.Gray); Spacer(modifier = Modifier.width(4.dp)); Text(text = statusText, style = MaterialTheme.typography.bodySmall, color = if (daysRemaining != null && daysRemaining <= 3) statusColor else Color.Gray, fontWeight = if (daysRemaining != null && daysRemaining <= 3) FontWeight.Bold else FontWeight.Normal) }
             };
             Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp)) { Text(text = "${product.count}x", modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
@@ -665,7 +645,43 @@ fun AdvancedAddCategoryDialog(onDismiss: () -> Unit, onConfirm: (String, Color, 
     var name by remember { mutableStateOf("") }
     var selectedColor by remember { mutableStateOf(CategoryPalette[0]) }
     var selectedIcon by remember { mutableStateOf(AVAILABLE_ICONS[0]) }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Nowa Kategoria") }, text = { Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nazwa") }, singleLine = true); Text("Kolor:", style = MaterialTheme.typography.labelLarge); LazyVerticalGrid(columns = GridCells.Adaptive(40.dp), modifier = Modifier.height(80.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { items(CategoryPalette) { color -> Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(color).clickable { selectedColor = color }.border(if(selectedColor == color) 2.dp else 0.dp, Color.Black, CircleShape)) } }; Text("Ikona:", style = MaterialTheme.typography.labelLarge); LazyVerticalGrid(columns = GridCells.Adaptive(40.dp), modifier = Modifier.height(120.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { items(AVAILABLE_ICONS) { icon -> Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(if(selectedIcon == icon) Color.LightGray else Color.Transparent).clickable { selectedIcon = icon }, contentAlignment = Alignment.Center) { Icon(icon, null) } } } } }, confirmButton = { Button(onClick = { onConfirm(name, selectedColor, selectedIcon) }, enabled = name.isNotBlank()) { Text("Zapisz") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Anuluj") } })
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nowa Kategoria") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nazwa") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AppTopBarBrown,
+                        unfocusedBorderColor = AppTopBarBrown,
+                        focusedLabelColor = AppTopBarBrown,
+                        cursorColor = AppTopBarBrown
+                    )
+                )
+                Text("Kolor:", style = MaterialTheme.typography.labelLarge)
+                LazyVerticalGrid(columns = GridCells.Adaptive(40.dp), modifier = Modifier.height(80.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { items(CategoryPalette) { color -> Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(color).clickable { selectedColor = color }.border(if(selectedColor == color) 2.dp else 0.dp, Color.Black, CircleShape)) } }
+                Text("Ikona:", style = MaterialTheme.typography.labelLarge)
+                LazyVerticalGrid(columns = GridCells.Adaptive(40.dp), modifier = Modifier.height(120.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { items(AVAILABLE_ICONS) { icon -> Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(if(selectedIcon == icon) Color.LightGray else Color.Transparent).clickable { selectedIcon = icon }, contentAlignment = Alignment.Center) { Icon(icon, null) } } }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(name, selectedColor, selectedIcon) },
+                enabled = name.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = AppTopBarBrown, contentColor = Color.White)
+            ) { Text("Zapisz") }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
+            ) { Text("Anuluj") }
+        }
+    )
 }
 
 @Composable
@@ -686,7 +702,8 @@ fun getThematicIcon(category: String): ImageVector {
     }
 }
 
-fun calculateDaysRemaining(expirationDate: Long): Long {
+fun calculateDaysRemaining(expirationDate: Long?): Long? {
+    if (expirationDate == null) return null
     val diff = expirationDate - System.currentTimeMillis()
     return TimeUnit.MILLISECONDS.toDays(diff)
 }

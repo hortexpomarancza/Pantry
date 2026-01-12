@@ -31,12 +31,9 @@ class ProductViewModel(application: Application, private val repository: Product
     val currentProducts: LiveData<List<Product>> = repository.getProductsByLocation(HARDCODED_LOCATION)
     val allSpaces: LiveData<List<Space>> = repository.allSpaces
 
-    // --- GŁÓWNA LISTA KATEGORII (Z KOLEJNOŚCIĄ) ---
-    // To jest nasze źródło prawdy dla kolejności wyświetlania
     private val _categories = mutableStateListOf<String>()
     val categories: List<String> get() = _categories
 
-    // --- PAMIĘĆ KOLORÓW I IKON ---
     val categoryColors = mutableStateMapOf<String, Int>().apply {
         put("Warzywa i Owoce", VividGreen.toArgb())
         put("Nabiał", VividOrange.toArgb())
@@ -49,15 +46,12 @@ class ProductViewModel(application: Application, private val repository: Product
 
     val customIcons = mutableStateMapOf<String, ImageVector>()
 
-    // Obserwator produktów, aby dodawać brakujące kategorie
     private val productsObserver = Observer<List<Product>> { products ->
         syncCategoriesWithProducts(products)
     }
 
     init {
         loadData()
-        // Obserwujemy produkty "forever", ponieważ ViewModel żyje długo.
-        // W produkcyjnym kodzie warto to robić ostrożniej, ale tu jest OK.
         currentProducts.observeForever(productsObserver)
     }
 
@@ -66,35 +60,27 @@ class ProductViewModel(application: Application, private val repository: Product
         currentProducts.removeObserver(productsObserver)
     }
 
-    // --- LOGIKA PRZESUWANIA (DRAG & DROP) ---
     fun moveCategory(fromIndex: Int, toIndex: Int) {
         if (fromIndex == toIndex) return
         if (fromIndex in _categories.indices && toIndex in _categories.indices) {
             val item = _categories.removeAt(fromIndex)
             _categories.add(toIndex, item)
-            saveCategoriesOrder() // Zapisujemy nową kolejność natychmiast
+            saveCategoriesOrder()
         }
     }
 
-    // --- ZARZĄDZANIE DANYMI ---
-
     private fun loadData() {
         val prefs = getApplication<Application>().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
-        // 1. Wczytaj kolejność kategorii
         val savedOrderString = prefs.getString(ORDER_KEY, null)
         if (savedOrderString != null) {
             val savedList = savedOrderString.split(",").filter { it.isNotBlank() }
             _categories.clear()
             _categories.addAll(savedList)
         } else {
-            // Pierwsze uruchomienie - załaduj domyślne
             _categories.clear()
             _categories.addAll(DEFAULT_START_CATEGORIES)
         }
 
-        // 2. Wczytaj kolory i ikony (dla niestandardowych)
-        // Pobieramy wszystkie klucze i szukamy tych od kolorów/ikon
         val allPrefs = prefs.all
         allPrefs.keys.forEach { key ->
             if (key.startsWith("color_")) {
@@ -115,7 +101,6 @@ class ProductViewModel(application: Application, private val repository: Product
     private fun saveCategoriesOrder() {
         val prefs = getApplication<Application>().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val editor = prefs.edit()
-        // Zapisujemy listę jako jeden ciąg oddzielony przecinkami
         val orderString = _categories.joinToString(",")
         editor.putString(ORDER_KEY, orderString)
         editor.apply()
@@ -141,29 +126,20 @@ class ProductViewModel(application: Application, private val repository: Product
     }
 
     private fun syncCategoriesWithProducts(products: List<Product>) {
-        // Sprawdzamy, czy w produktach są kategorie, których nie mamy na liście
         var changed = false
         val usedCategories = products.map { it.category }.distinct()
-
-        // Dodaj brakujące (np. zeskanowane z kodu, a nie dodane ręcznie)
         usedCategories.forEach { cat ->
             if (!_categories.contains(cat)) {
                 _categories.add(cat)
                 changed = true
             }
         }
-
-        // Jeśli dodaliśmy coś nowego, zapiszmy nową kolejność
-        if (changed) {
-            saveCategoriesOrder()
-        }
+        if (changed) saveCategoriesOrder()
     }
-
-    // --- PUBLICZNE METODY ---
 
     fun addSessionCategory(categoryName: String, color: Int, icon: ImageVector?) {
         if (!_categories.contains(categoryName)) {
-            _categories.add(0, categoryName) // Dodajemy na początek, żeby użytkownik widział
+            _categories.add(0, categoryName)
             saveCategoriesOrder()
         }
         categoryColors[categoryName] = color
@@ -183,7 +159,6 @@ class ProductViewModel(application: Application, private val repository: Product
         removeCategoryAttributes(categoryName)
     }
 
-    // --- Reszta metod (Produkt/Przestrzeń) ---
     fun setLocation(location: String) { }
     fun updateCurrentSpaceColor(color: Int) { }
     fun addSpace(name: String, color: Int) { }
@@ -197,7 +172,8 @@ class ProductViewModel(application: Application, private val repository: Product
         return repository.getProductById(id)
     }
 
-    fun addProduct(name: String, expirationDate: Long, barcode: String?, category: String, count: Int) {
+    // ZMIANA: expirationDate teraz nullable (Long?)
+    fun addProduct(name: String, expirationDate: Long?, barcode: String?, category: String, count: Int) {
         val newProduct = Product(
             name = name,
             expirationDate = expirationDate,
@@ -209,6 +185,7 @@ class ProductViewModel(application: Application, private val repository: Product
         viewModelScope.launch { repository.insert(newProduct) }
     }
 
+    // ZMIANA: expirationDate teraz nullable (Long?) w modelu Product
     fun updateProduct(product: Product) {
         viewModelScope.launch { repository.update(product) }
     }

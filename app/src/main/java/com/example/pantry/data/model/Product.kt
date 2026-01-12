@@ -9,7 +9,8 @@ import androidx.room.PrimaryKey
 data class Product(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
-    val expirationDate: Long,
+    // ZMIANA: Znak zapytania oznacza, że data może być pusta (null)
+    val expirationDate: Long?,
     val barcode: String? = null,
     val category: String,
     val count: Int = 1,
@@ -19,5 +20,5 @@ data class Product(
 @Entity(tableName = "spaces")
 data class Space(
     @PrimaryKey val name: String,
-    val color: Int // Przechowujemy kolor jako Int (ARGB)
+    val color: Int
 )
