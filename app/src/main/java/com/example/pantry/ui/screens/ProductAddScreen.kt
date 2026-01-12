@@ -39,10 +39,7 @@ fun ProductAddScreen(
     onNavigateBack: () -> Unit,
     onNavigateToScanner: () -> Unit,
     scannedBarcode: String? = null,
-    productIdToEdit: Int? = null,
-    initialCategory: String? = null,
-    availableCategories: List<String>,
-    spaceColor: Int? = null
+    productIdToEdit: Int? = null
 ) {
     val context = LocalContext.current
     val isEditMode = productIdToEdit != null && productIdToEdit != -1
@@ -135,13 +132,9 @@ fun ProductAddScreen(
         containerColor = softBackground,
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditMode) "Edytuj produkt" else "Dodaj produkt", color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.Close, contentDescription = "Anuluj", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = mainColor)
+                title = {
+                    Text(text = stringResource(if (isEditMode) R.string.edit_product else R.string.add_product))
+                }
             )
         }
     ) { innerPadding ->
@@ -319,7 +312,7 @@ fun ProductAddScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = mainColor, contentColor = Color.White)
                 ) {
-                    Text(if (isEditMode) "Zapisz zmiany" else "Dodaj produkt", fontSize = 18.sp, color = Color.White)
+                    Text(text = stringResource(if (isEditMode) R.string.save_changes else R.string.add))
                 }
             }
         }

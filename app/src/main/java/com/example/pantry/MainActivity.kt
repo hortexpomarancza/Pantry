@@ -47,8 +47,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Inicjalizacja bazy i ViewModel
-        val database = AppDatabase.getDatabase(this)
+        scheduleExpiryWorker()
+
+        val database = AppDatabase.getDatabase(applicationContext)
         val repository = ProductRepository(database.productDao())
 
         // Fabryka teraz przyjmuje application (poprawka z poprzednich kroków)
@@ -100,6 +101,23 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
+                    )
+                ) { backStackEntry ->
+                    val scannedBarcode = backStackEntry.savedStateHandle
+                        .getLiveData<String>("barcode")
+                        .observeAsState()
+
+                    val productIdArg = backStackEntry.arguments?.getInt("productId") ?: -1
+                    val productId = if (productIdArg == -1) null else productIdArg
+
+                    ProductAddScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToScanner = { navController.navigate("scanner") },
+                        scannedBarcode = scannedBarcode.value,
+                        productIdToEdit = productId
+                    )
+                }
 
                         // --- EKRAN DODAWANIA ---
                         composable(
@@ -175,32 +193,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Powiadomienia o ważności"
-            val descriptionText = "Powiadamia o kończącym się terminie produktów"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel("pantry_expiration_channel", name, importance).apply {
-                description = descriptionText
-            }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun scheduleExpirationCheck() {
-        val oneTimeRequest = androidx.work.OneTimeWorkRequest.Builder(com.example.pantry.worker.ExpirationNotificationWorker::class.java).build()
-        WorkManager.getInstance(this).enqueue(oneTimeRequest)
-
-        val expirationCheckRequest = PeriodicWorkRequestBuilder<com.example.pantry.worker.ExpirationNotificationWorker>(
-            24, TimeUnit.HOURS
+    private fun scheduleExpiryWorker() {
+        val request = androidx.work.PeriodicWorkRequestBuilder<com.example.pantry.worker.ExpirationCheckWorker>(
+            1, java.util.concurrent.TimeUnit.DAYS
         ).build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "ExpirationCheck",
-            ExistingPeriodicWorkPolicy.KEEP,
-            expirationCheckRequest
+        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "expiry_check_worker",
+            androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+            request
         )
+
     }
+
 }

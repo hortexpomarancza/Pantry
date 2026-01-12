@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_product">Dodaj produkt</string>
+    <string name="edit_product">Edytuj produkt</string>
+    <string name="product_name">Nazwa produktu</string>
+    <string name="barcode">Kod kreskowy</string>
+    <string name="scan_barcode">Zeskanuj kod kreskowy</string>
+    <string name="expiration_date">Data ważności</string>
+    <string name="select_date">Wybierz datę</string>
+    <string name="add">Dodaj</string>
+    <string name="save_changes">Zapisz zmiany</string>
+    <string name="error_cannot_be_empty">Nazwa produktu nie może być pusta.</string>
+    <string name="error_date_mismatch">Data ważności nie może być wcześniejsza niż dzisiaj.</string>
+    <string name="best_before">Data ważności: %1$s</string>
+    <string name="delete_product">Usuń produkt</string>
+    <string name="delete_product_prompt">Czy chcesz usunąć %1$s?</string>
+    <string name="delete">Usuń</string>
+    <string name="cancel">Anuluj</string>
+    <string name="camera_permission_required">Wymagany jest dostęp do kamery.</string>
+    <string name="center_barcode">Wyśrodkuj kod kreskowy na ekranie</string>
+</resources>

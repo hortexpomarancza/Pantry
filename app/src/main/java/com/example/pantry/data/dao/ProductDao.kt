@@ -35,25 +35,7 @@ interface ProductDao {
     @Delete
     suspend fun deleteProduct(product: Product)
 
-    @Query("DELETE FROM products WHERE category = :category AND storageLocation = :location")
-    suspend fun deleteProductsByCategoryAndLocation(category: String, location: String)
+    @Query("SELECT * FROM products")
+    suspend fun getAllProductsOnce(): List<Product>
 
-    @Query("DELETE FROM products WHERE storageLocation = :location")
-    suspend fun deleteProductsByLocation(location: String)
-
-    // --- PRZESTRZENIE ---
-    @Query("SELECT * FROM spaces")
-    fun getAllSpaces(): LiveData<List<Space>>
-
-    @Query("SELECT COUNT(*) FROM spaces")
-    suspend fun getSpacesCount(): Int
-
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertSpace(space: Space)
-
-    @Delete
-    suspend fun deleteSpace(space: Space)
-
-    @Query("UPDATE spaces SET color = :color WHERE name = :name")
-    suspend fun updateSpaceColor(name: String, color: Int)
 }
